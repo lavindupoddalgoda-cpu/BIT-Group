@@ -12,8 +12,4 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-
-# Admin Panel එකේ Identity සේවාවන් සඳහා
-[status]
-  [status.identity]
-    url = "/.netlify/identity"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

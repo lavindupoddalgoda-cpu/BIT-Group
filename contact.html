@@ -1,0 +1,33 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "images/uploads"
+public_folder: "/images/uploads"
+
+collections:
+  - name: "portfolio"
+    label: "Portfolio"
+    folder: "_portfolio"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Category", name: "category", widget: "select", options: ["Web Design", "E-Commerce", "Landing Page", "Admin Panel"] }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "URL", name: "url", widget: "string", required: false }
+      - { label: "Featured Image", name: "image", widget: "image", required: false }
+      - { label: "Date", name: "date", widget: "datetime" }
+
+  - name: "pricing"
+    label: "Pricing Packages"
+    folder: "_pricing"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Package Name", name: "title", widget: "string" }
+      - { label: "Price (LKR)", name: "price", widget: "number" }
+      - { label: "Description", name: "description", widget: "text" }
+      - { label: "Features", name: "features", widget: "list" }
+      - { label: "Highlighted", name: "highlighted", widget: "boolean", default: false }
+      - { label: "CTA Label", name: "cta", widget: "string", default: "Get Started" }

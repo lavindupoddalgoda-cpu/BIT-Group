@@ -1,0 +1,439 @@
+/* ═══════════════════════════════════════════════════════════════════
+   THE BIT GROUP — MASTER SCRIPT
+   Vanilla JS — Zero Dependencies
+═══════════════════════════════════════════════════════════════════ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  initPreloader();
+  initNavigation();
+  initRevealAnimations();
+  initCounters();
+  initCarousel();
+  initProductFilter();
+  initForms();
+  initAccordion();
+  initScrollTop();
+  initSmoothScroll();
+  initHeroAnimation();
+});
+
+/* ─── PRELOADER ────────────────────────────────────────────────── */
+function initPreloader() {
+  const preloader = document.getElementById('preloader');
+  if (!preloader) return;
+
+  const bar = preloader.querySelector('.preloader-bar');
+  let progress = 0;
+
+  const tick = () => {
+    progress += Math.random() * 18 + 5;
+    if (progress > 100) progress = 100;
+    if (bar) bar.style.width = progress + '%';
+    if (progress < 100) {
+      setTimeout(tick, 80 + Math.random() * 120);
+    } else {
+      setTimeout(hidePreloader, 400);
+    }
+  };
+
+  setTimeout(tick, 200);
+
+  const minTime = new Promise(res => setTimeout(res, 1200));
+
+  function hidePreloader() {
+    minTime.then(() => {
+      preloader.classList.add('hidden');
+      document.body.style.overflow = '';
+      triggerHeroAnimation();
+    });
+  }
+
+  document.body.style.overflow = 'hidden';
+}
+
+/* ─── NAVIGATION ───────────────────────────────────────────────── */
+function initNavigation() {
+  const navbar = document.getElementById('navbar');
+  if (!navbar) return;
+
+  const hamburger = navbar.querySelector('.hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  let scrolled = false;
+
+  const updateNav = () => {
+    const shouldScroll = window.scrollY > 80;
+    if (shouldScroll !== scrolled) {
+      scrolled = shouldScroll;
+      navbar.classList.toggle('scrolled', scrolled);
+    }
+  };
+
+  window.addEventListener('scroll', updateNav, { passive: true });
+  updateNav();
+
+  // Active link
+  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+  navbar.querySelectorAll('.nav-links a, .mobile-menu a').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && (href === currentPath || (currentPath === '' && href === 'index.html') || (currentPath === 'index.html' && href === 'index.html'))) {
+      link.classList.add('active');
+    }
+  });
+
+  // Mobile menu
+  if (hamburger && mobileMenu) {
+    hamburger.addEventListener('click', () => {
+      const isOpen = hamburger.classList.toggle('active');
+      mobileMenu.classList.toggle('active', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+      hamburger.setAttribute('aria-expanded', isOpen);
+    });
+
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        mobileMenu.classList.remove('active');
+        document.body.style.overflow = '';
+      });
+    });
+  }
+}
+
+/* ─── HERO ANIMATION ───────────────────────────────────────────── */
+function initHeroAnimation() {
+  const heading = document.querySelector('.hero-heading');
+  if (!heading) return;
+
+  const text = heading.textContent.trim();
+  const words = text.split(' ');
+  heading.innerHTML = words.map(word =>
+    `<span class="word"><span class="word-inner">${word}</span></span>`
+  ).join(' ');
+}
+
+function triggerHeroAnimation() {
+  const wordInners = document.querySelectorAll('.hero-heading .word-inner');
+  const sub = document.querySelector('.hero-sub');
+  const actions = document.querySelector('.hero-actions');
+
+  wordInners.forEach((wi, i) => {
+    setTimeout(() => wi.classList.add('visible'), 100 + i * 100);
+  });
+
+  const delay = 200 + wordInners.length * 100 + 300;
+  if (sub) setTimeout(() => sub.classList.add('visible'), delay);
+  if (actions) setTimeout(() => actions.classList.add('visible'), delay + 150);
+}
+
+/* ─── REVEAL ANIMATIONS ────────────────────────────────────────── */
+function initRevealAnimations() {
+  const targets = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+  if (!targets.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const delay = el.dataset.delay || 0;
+        setTimeout(() => el.classList.add('is-visible'), delay);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+
+  targets.forEach((el, i) => {
+    // Auto-stagger siblings
+    const parent = el.parentElement;
+    const siblings = parent ? Array.from(parent.querySelectorAll(':scope > .reveal, :scope > .reveal-left, :scope > .reveal-right, :scope > .reveal-scale')) : [];
+    if (siblings.length > 1 && !el.dataset.delay) {
+      const idx = siblings.indexOf(el);
+      if (idx > 0) el.dataset.delay = idx * 80;
+    }
+    observer.observe(el);
+  });
+}
+
+/* ─── COUNTERS ─────────────────────────────────────────────────── */
+function initCounters() {
+  const counters = document.querySelectorAll('[data-count]');
+  if (!counters.length) return;
+
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+
+  const animateCounter = (el) => {
+    const target = parseFloat(el.dataset.count);
+    const suffix = el.dataset.suffix || '';
+    const duration = 2000;
+    const start = performance.now();
+
+    const tick = (now) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const value = target * easeOut(progress);
+      el.textContent = (Number.isInteger(target) ? Math.round(value) : value.toFixed(1)) + suffix;
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateCounter(entry.target);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  counters.forEach(el => observer.observe(el));
+}
+
+/* ─── CAROUSEL ──────────────────────────────────────────────────── */
+function initCarousel() {
+  const carousels = document.querySelectorAll('.carousel');
+  if (!carousels.length) return;
+
+  carousels.forEach(carousel => {
+    const track = carousel.querySelector('.carousel-track');
+    const slides = carousel.querySelectorAll('.carousel-slide');
+    const dots = carousel.querySelectorAll('.carousel-dot');
+    const prevBtn = carousel.querySelector('.carousel-btn.prev');
+    const nextBtn = carousel.querySelector('.carousel-btn.next');
+
+    if (!track || !slides.length) return;
+
+    let current = 0;
+    let autoTimer;
+    let isHovered = false;
+
+    const go = (index) => {
+      current = (index + slides.length) % slides.length;
+      track.style.transform = `translateX(-${current * 100}%)`;
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    };
+
+    const autoAdvance = () => {
+      if (!isHovered) go(current + 1);
+    };
+
+    const startAuto = () => { autoTimer = setInterval(autoAdvance, 5000); };
+    const stopAuto = () => clearInterval(autoTimer);
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { stopAuto(); go(current - 1); startAuto(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { stopAuto(); go(current + 1); startAuto(); });
+
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => { stopAuto(); go(i); startAuto(); });
+    });
+
+    carousel.addEventListener('mouseenter', () => { isHovered = true; });
+    carousel.addEventListener('mouseleave', () => { isHovered = false; });
+
+    // Touch support
+    let touchStartX = 0;
+    carousel.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    carousel.addEventListener('touchend', e => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) { stopAuto(); go(current + (diff > 0 ? 1 : -1)); startAuto(); }
+    });
+
+    go(0);
+    startAuto();
+  });
+}
+
+/* ─── PORTFOLIO FILTER ─────────────────────────────────────────── */
+function initProductFilter() {
+  const filterBar = document.querySelector('.filter-bar');
+  if (!filterBar) return;
+
+  const pills = filterBar.querySelectorAll('.filter-pill');
+  const cards = document.querySelectorAll('.portfolio-card, .filter-card');
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+
+      const filter = pill.dataset.filter;
+
+      cards.forEach((card, i) => {
+        const cat = card.dataset.category || '';
+        const visible = filter === 'all' || cat === filter;
+
+        if (visible) {
+          card.classList.remove('hidden');
+          card.style.transitionDelay = (i % 6 * 60) + 'ms';
+          requestAnimationFrame(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'none';
+          });
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+}
+
+/* ─── FORMS ─────────────────────────────────────────────────────── */
+function initForms() {
+  // Floating labels
+  document.querySelectorAll('.form-group input, .form-group textarea').forEach(el => {
+    const group = el.closest('.form-group');
+    if (!group) return;
+
+    const checkValue = () => group.classList.toggle('has-value', el.value.length > 0);
+    el.addEventListener('input', checkValue);
+    el.addEventListener('blur', checkValue);
+    checkValue();
+
+    // Textarea auto-resize
+    if (el.tagName === 'TEXTAREA') {
+      el.addEventListener('input', () => {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+      });
+    }
+  });
+
+  // Contact form
+  const contactForm = document.getElementById('contact-form');
+  if (contactForm) {
+    contactForm.addEventListener('submit', handleContactForm);
+    contactForm.querySelectorAll('input, textarea').forEach(el => {
+      el.addEventListener('blur', () => validateField(el));
+    });
+  }
+
+  // Quote form
+  const quoteForm = document.getElementById('quote-form');
+  if (quoteForm) {
+    quoteForm.addEventListener('submit', handleQuoteForm);
+  }
+}
+
+function validateField(el) {
+  const group = el.closest('.form-group');
+  if (!group) return true;
+  const errorEl = group.querySelector('.form-error');
+  const value = el.value.trim();
+  let valid = true;
+  let msg = '';
+
+  if (el.required && !value) { valid = false; msg = 'This field is required.'; }
+  else if (el.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { valid = false; msg = 'Please enter a valid email.'; }
+  else if (el.type === 'tel' && value && !/^[\d\s\+\-\(\)]{7,15}$/.test(value)) { valid = false; msg = 'Please enter a valid phone number.'; }
+
+  group.classList.toggle('error', !valid);
+  group.classList.toggle('success', valid && !!value);
+  if (errorEl) errorEl.textContent = msg;
+  return valid;
+}
+
+function handleContactForm(e) {
+  e.preventDefault();
+  const form = e.target;
+  let allValid = true;
+
+  form.querySelectorAll('input[required], textarea[required]').forEach(el => {
+    if (!validateField(el)) allValid = false;
+  });
+
+  if (!allValid) return;
+
+  const btn = form.querySelector('button[type="submit"]');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    const successEl = document.getElementById('form-success');
+    if (successEl) {
+      form.style.display = 'none';
+      successEl.classList.add('show');
+    }
+  }, 1500);
+}
+
+function handleQuoteForm(e) {
+  e.preventDefault();
+  const form = e.target;
+  const name = form.querySelector('[name="name"]')?.value || '';
+  const service = form.querySelector('[name="service"]')?.value || '';
+  const budget = form.querySelector('[name="budget"]')?.value || '';
+  const message = form.querySelector('[name="message"]')?.value || '';
+
+  const text = `*New Quote Request — The BIT Group*\n\n*Name:* ${name}\n*Service:* ${service}\n*Budget:* ${budget}\n*Message:* ${message}`;
+  const encoded = encodeURIComponent(text);
+  window.open(`https://wa.me/27788327075?text=${encoded}`, '_blank');
+}
+
+/* ─── ACCORDION ─────────────────────────────────────────────────── */
+function initAccordion() {
+  const items = document.querySelectorAll('.accordion-item');
+  if (!items.length) return;
+
+  items.forEach(item => {
+    const trigger = item.querySelector('.accordion-trigger');
+    const body = item.querySelector('.accordion-body');
+    if (!trigger || !body) return;
+
+    trigger.setAttribute('aria-expanded', 'false');
+
+    trigger.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      item.classList.toggle('open', !isOpen);
+      trigger.setAttribute('aria-expanded', String(!isOpen));
+      body.style.maxHeight = isOpen ? '0' : body.scrollHeight + 'px';
+    });
+
+    trigger.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger.click(); }
+    });
+  });
+}
+
+/* ─── SCROLL TOP ────────────────────────────────────────────────── */
+function initScrollTop() {
+  const btn = document.getElementById('scroll-top');
+  if (!btn) return;
+
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  }, { passive: true });
+
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+/* ─── SMOOTH SCROLL ──────────────────────────────────────────────── */
+function initSmoothScroll() {
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      const target = document.querySelector(link.getAttribute('href'));
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+}
+
+/* ─── WHATSAPP QUOTE BUTTON ──────────────────────────────────────── */
+document.querySelectorAll('[data-whatsapp]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const msg = btn.dataset.whatsapp || 'Hello! I\'m interested in your web design services.';
+    window.open(`https://wa.me/27788327075?text=${encodeURIComponent(msg)}`, '_blank');
+  });
+});
+
+/* ─── CTA GET A QUOTE (inline buttons) ──────────────────────────── */
+document.querySelectorAll('.btn-quote').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pkg = btn.dataset.package || '';
+    const msg = pkg
+      ? `Hello! I'm interested in the *${pkg}* package. Could you please provide more details?`
+      : `Hello! I'd like to get a quote for a website. Could you please help me?`;
+    window.open(`https://wa.me/27788327075?text=${encodeURIComponent(msg)}`, '_blank');
+  });
+});
